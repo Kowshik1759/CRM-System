@@ -1,4 +1,5 @@
 const http = require('http');
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const { app, startServer } = require('../server');
 
 const runTests = async () => {
@@ -50,7 +51,7 @@ const runTests = async () => {
     console.log('[Test 2] Testing Admin Login (/api/v1/auth/login)...');
     const loginRes = await request('/api/v1/auth/login', 'POST', {
       email: 'admin@crmpro.com',
-      password: 'Admin@123'
+      password: process.env.ADMIN_PASSWORD
     });
     console.log('Login status:', loginRes.status, 'User:', loginRes.data?.user?.name, 'Role:', loginRes.data?.user?.role);
     if (!loginRes.data?.token) throw new Error('Admin login failed');
@@ -91,7 +92,7 @@ const runTests = async () => {
     console.log('[Test 11] Testing RBAC restriction (Sales Executive trying to access Admin Users endpoint)...');
     const execLogin = await request('/api/v1/auth/login', 'POST', {
       email: 'executive@crmpro.com',
-      password: 'Executive@123'
+      password: process.env.EXECUTIVE_PASSWORD
     });
     const execToken = execLogin.data.token;
     const forbiddenRes = await request('/api/v1/users', 'GET', null, execToken);

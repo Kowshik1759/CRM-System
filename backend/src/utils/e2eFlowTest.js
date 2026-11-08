@@ -1,4 +1,5 @@
 const http = require('http');
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const { app, startServer } = require('../server');
 
 const runFullLifecycleSimulation = async () => {
@@ -49,7 +50,7 @@ const runFullLifecycleSimulation = async () => {
     console.log('[Step 1] Authenticating as Admin (Alexander Wright)...');
     const loginRes = await request('/api/v1/auth/login', 'POST', {
       email: 'admin@crmpro.com',
-      password: 'Admin@123'
+      password: process.env.ADMIN_PASSWORD
     });
     const token = loginRes.data.token;
     console.log('✓ Admin authenticated successfully. JWT token obtained.\n');

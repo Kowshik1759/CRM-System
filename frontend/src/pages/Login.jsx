@@ -5,8 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { Sparkles, ArrowRight, Lock, Mail, Shield, UserCheck } from 'lucide-react';
 
 export const Login = () => {
-  const [email, setEmail] = useState('admin@crmpro.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { success, error: toastError } = useToast();
@@ -26,10 +26,7 @@ export const Login = () => {
     }
   };
 
-  const handleDemoLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -104,49 +101,7 @@ export const Login = () => {
             </button>
           </form>
 
-          {/* Quick Demo Role Selector */}
-          <div className="mt-8 pt-6 border-t border-slate-700/60">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center mb-3">
-              One-Click Demo Credentials
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('admin@crmpro.com', 'Admin@123')}
-                className="p-2.5 bg-slate-900/50 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition"
-              >
-                <span className="font-bold text-rose-400 block">Admin</span>
-                <span className="text-slate-400 text-[11px]">admin@crmpro.com</span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('manager@crmpro.com', 'Manager@123')}
-                className="p-2.5 bg-slate-900/50 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition"
-              >
-                <span className="font-bold text-purple-400 block">Sales Manager</span>
-                <span className="text-slate-400 text-[11px]">manager@crmpro.com</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('executive@crmpro.com', 'Executive@123')}
-                className="p-2.5 bg-slate-900/50 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition"
-              >
-                <span className="font-bold text-indigo-400 block">Sales Executive</span>
-                <span className="text-slate-400 text-[11px]">executive@crmpro.com</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('support@crmpro.com', 'Support@123')}
-                className="p-2.5 bg-slate-900/50 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition"
-              >
-                <span className="font-bold text-teal-400 block">Customer Support</span>
-                <span className="text-slate-400 text-[11px]">support@crmpro.com</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -30,7 +30,7 @@ const seedData = async (shouldDisconnect = true) => {
     const admin = await User.create({
       name: 'Alexander Wright',
       email: 'admin@crmpro.com',
-      password: 'Admin@123',
+      password: process.env.ADMIN_PASSWORD,
       role: 'admin',
       department: 'Executive Management',
       phone: '+1 (555) 019-2831',
@@ -41,7 +41,7 @@ const seedData = async (shouldDisconnect = true) => {
     const manager = await User.create({
       name: 'Sarah Jenkins',
       email: 'manager@crmpro.com',
-      password: 'Manager@123',
+      password: process.env.MANAGER_PASSWORD,
       role: 'sales_manager',
       department: 'Sales Leadership',
       phone: '+1 (555) 019-2832',
@@ -52,7 +52,7 @@ const seedData = async (shouldDisconnect = true) => {
     const executive1 = await User.create({
       name: 'David Miller',
       email: 'executive@crmpro.com',
-      password: 'Executive@123',
+      password: process.env.EXECUTIVE_PASSWORD,
       role: 'sales_executive',
       department: 'Direct Sales',
       phone: '+1 (555) 019-2833',
@@ -63,7 +63,7 @@ const seedData = async (shouldDisconnect = true) => {
     const executive2 = await User.create({
       name: 'Elena Rostova',
       email: 'elena@crmpro.com',
-      password: 'Executive@123',
+      password: process.env.EXECUTIVE_PASSWORD,
       role: 'sales_executive',
       department: 'Direct Sales',
       phone: '+1 (555) 019-2834',
@@ -74,7 +74,7 @@ const seedData = async (shouldDisconnect = true) => {
     const support = await User.create({
       name: 'Marcus Chen',
       email: 'support@crmpro.com',
-      password: 'Support@123',
+      password: process.env.SUPPORT_PASSWORD,
       role: 'customer_support',
       department: 'Customer Success',
       phone: '+1 (555) 019-2835',

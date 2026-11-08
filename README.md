@@ -245,19 +245,6 @@ Open your browser at `http://localhost:3000`.
 
 ---
 
-## 12. Default Demo Credentials
-
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Admin** | `admin@crmpro.com` | `Admin@123` |
-| **Sales Manager** | `manager@crmpro.com` | `Manager@123` |
-| **Sales Executive** | `executive@crmpro.com` | `Executive@123` |
-| **Customer Support** | `support@crmpro.com` | `Support@123` |
-
-*Note: The login screen also features quick 1-click credential selector buttons for effortless testing.*
-
----
-
 ## 13. Docker & Docker Compose Execution
 
 Run the complete multi-container stack (Database, API, and Web UI) with a single command:
