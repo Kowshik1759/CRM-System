@@ -63,3 +63,4 @@ const followUpSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('FollowUp', followUpSchema);
+

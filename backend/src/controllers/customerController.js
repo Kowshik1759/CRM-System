@@ -160,3 +160,4 @@ exports.deleteCustomer = async (req, res, next) => {
     next(error);
   }
 };
+

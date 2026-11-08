@@ -27,3 +27,4 @@ router.patch('/:id/stage', authorize('admin', 'sales_manager', 'sales_executive'
 router.post('/:id/convert', authorize('admin', 'sales_manager', 'sales_executive'), convertLead);
 
 module.exports = router;
+

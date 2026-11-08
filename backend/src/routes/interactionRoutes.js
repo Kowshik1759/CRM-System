@@ -18,3 +18,4 @@ router.route('/:id')
   .delete(authorize('admin', 'sales_manager'), deleteInteraction);
 
 module.exports = router;
+

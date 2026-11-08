@@ -51,3 +51,4 @@ const interactionSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Interaction', interactionSchema);
+

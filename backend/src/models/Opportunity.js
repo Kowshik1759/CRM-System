@@ -63,3 +63,4 @@ const opportunitySchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Opportunity', opportunitySchema);
+

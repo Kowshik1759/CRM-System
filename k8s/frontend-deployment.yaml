@@ -54,3 +54,4 @@ spec:
       nodePort: 30080
   selector:
     app: crm-frontend
+

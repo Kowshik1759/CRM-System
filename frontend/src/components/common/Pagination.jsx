@@ -49,3 +49,4 @@ export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, 
     </div>
   );
 };
+

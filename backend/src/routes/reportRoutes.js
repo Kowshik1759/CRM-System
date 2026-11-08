@@ -18,3 +18,4 @@ router.get('/customer-details', getCustomerDetailsReport);
 router.get('/followup-activity', getFollowUpActivityReport);
 
 module.exports = router;
+

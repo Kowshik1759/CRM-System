@@ -21,3 +21,4 @@ router.route('/:id')
   .delete(deleteFollowUp);
 
 module.exports = router;
+

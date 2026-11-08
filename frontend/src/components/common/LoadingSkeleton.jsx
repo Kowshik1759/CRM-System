@@ -23,3 +23,4 @@ export const LoadingSkeleton = ({ count = 4, type = 'card' }) => {
     </div>
   );
 };
+
