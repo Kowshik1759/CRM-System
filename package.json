@@ -1,0 +1,27 @@
+{
+  "name": "enterprise-crm-system",
+  "version": "1.0.0",
+  "description": "Production-quality CRM Web Application for Small Businesses (MERN Stack)",
+  "private": true,
+  "scripts": {
+    "start": "node start-dev.js",
+    "dev": "node start-dev.js",
+    "seed": "npm --prefix backend run seed",
+    "test": "node backend/src/utils/e2eFlowTest.js",
+    "test:api": "node backend/src/utils/testApi.js",
+    "build": "npm --prefix frontend run build",
+    "validate:manifests": "node backend/src/utils/validateYaml.js"
+  },
+  "keywords": [
+    "crm",
+    "mern",
+    "react",
+    "express",
+    "mongodb",
+    "tailwind",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "Antigravity Engineering",
+  "license": "MIT"
+}
