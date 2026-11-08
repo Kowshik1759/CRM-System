@@ -52,3 +52,4 @@ if (allValid) {
   console.error('\n✗ YAML Validation failed.');
   process.exit(1);
 }
+
