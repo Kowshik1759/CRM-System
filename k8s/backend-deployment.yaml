@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: crm-backend:latest
+          image: crm-system-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000

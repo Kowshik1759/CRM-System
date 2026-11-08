@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: crm-frontend:latest
+          image: crm-system-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
