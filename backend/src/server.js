@@ -71,10 +71,10 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    // Check if initial users exist, if not run seeder automatically
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('[Bootstrap] No users detected in database. Executing initial seeder...');
+    // Check if admin user exists, if not run seeder automatically
+    const adminExists = await User.findOne({ email: 'admin@crm.com' });
+    if (!adminExists) {
+      console.log('[Bootstrap] System users missing in database. Executing initial seeder...');
       const seedData = require('./utils/seeder');
       await seedData(false); // keep connection open
     }

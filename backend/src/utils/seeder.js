@@ -30,7 +30,19 @@ const seedData = async (shouldDisconnect = true) => {
     const admin = await User.create({
       name: 'Alexander Wright',
       email: 'admin@crmpro.com',
-      password: process.env.ADMIN_PASSWORD,
+      password: process.env.ADMIN_PASSWORD || 'Admin@123',
+      role: 'admin',
+      department: 'Executive Management',
+      phone: '+1 (555) 019-2831',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      isActive: true
+    });
+
+    // Also seed alias account for admin@crm.com
+    await User.create({
+      name: 'Alexander Wright',
+      email: 'admin@crm.com',
+      password: process.env.ADMIN_PASSWORD || 'Admin@123',
       role: 'admin',
       department: 'Executive Management',
       phone: '+1 (555) 019-2831',
@@ -41,7 +53,18 @@ const seedData = async (shouldDisconnect = true) => {
     const manager = await User.create({
       name: 'Sarah Jenkins',
       email: 'manager@crmpro.com',
-      password: process.env.MANAGER_PASSWORD,
+      password: process.env.MANAGER_PASSWORD || 'Manager@123',
+      role: 'sales_manager',
+      department: 'Sales Leadership',
+      phone: '+1 (555) 019-2832',
+      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
+      isActive: true
+    });
+
+    await User.create({
+      name: 'Sarah Jenkins',
+      email: 'manager@crm.com',
+      password: process.env.MANAGER_PASSWORD || 'Manager@123',
       role: 'sales_manager',
       department: 'Sales Leadership',
       phone: '+1 (555) 019-2832',
@@ -52,7 +75,18 @@ const seedData = async (shouldDisconnect = true) => {
     const executive1 = await User.create({
       name: 'David Miller',
       email: 'executive@crmpro.com',
-      password: process.env.EXECUTIVE_PASSWORD,
+      password: process.env.EXECUTIVE_PASSWORD || 'Sales@123',
+      role: 'sales_executive',
+      department: 'Direct Sales',
+      phone: '+1 (555) 019-2833',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      isActive: true
+    });
+
+    await User.create({
+      name: 'David Miller',
+      email: 'sales@crm.com',
+      password: process.env.EXECUTIVE_PASSWORD || 'Sales@123',
       role: 'sales_executive',
       department: 'Direct Sales',
       phone: '+1 (555) 019-2833',
@@ -63,7 +97,7 @@ const seedData = async (shouldDisconnect = true) => {
     const executive2 = await User.create({
       name: 'Elena Rostova',
       email: 'elena@crmpro.com',
-      password: process.env.EXECUTIVE_PASSWORD,
+      password: process.env.EXECUTIVE_PASSWORD || 'Sales@123',
       role: 'sales_executive',
       department: 'Direct Sales',
       phone: '+1 (555) 019-2834',
@@ -74,7 +108,18 @@ const seedData = async (shouldDisconnect = true) => {
     const support = await User.create({
       name: 'Marcus Chen',
       email: 'support@crmpro.com',
-      password: process.env.SUPPORT_PASSWORD,
+      password: process.env.SUPPORT_PASSWORD || 'Support@123',
+      role: 'customer_support',
+      department: 'Customer Success',
+      phone: '+1 (555) 019-2835',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+      isActive: true
+    });
+
+    await User.create({
+      name: 'Marcus Chen',
+      email: 'support@crm.com',
+      password: process.env.SUPPORT_PASSWORD || 'Support@123',
       role: 'customer_support',
       department: 'Customer Success',
       phone: '+1 (555) 019-2835',
