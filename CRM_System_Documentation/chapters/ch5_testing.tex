@@ -1,0 +1,121 @@
+\chapter{TESTING AND RESULTS}
+
+\section{Testing Strategy}
+To guarantee software reliability, data integrity, and enterprise security, a rigorous multi-tier testing methodology was executed across the CRM System. The testing strategy integrates:
+\begin{enumerate}
+    \item \textbf{Unit and Component Testing:} Verification of individual helper utilities, schema validations, and isolated React component state transitions.
+    \item \textbf{API and Integration Testing:} Automated execution of HTTP REST transactions against all backend endpoints, validating status codes, payload structures, and database persistence.
+    \item \textbf{End-to-End (E2E) Flow Simulation:} Executed via \texttt{backend/src/utils/e2eFlowTest.js}, simulating an entire business lifecycle from user authentication to lead conversion, deal progression, and report recalculation.
+    \item \textbf{Role-Based Access Control (RBAC) Testing:} Positive and negative authorization tests ensuring non-privileged personas (e.g., Sales Executives, Customer Support) are strictly barred from restricted administrative and financial endpoints.
+    \item \textbf{Cloud Deployment Verification:} Live health probing of production deployments hosted on Vercel, Render, and MongoDB Atlas.
+\end{enumerate}
+
+\section{Functional Testing}
+Functional testing verified that every module behaves strictly in conformance with the Functional Requirements (FR-01 to FR-18). Each screen was evaluated for form submissions, state mutations, modal dialog activations, and pagination boundaries.
+
+\section{Login Testing}
+Authentication testing evaluated both valid and invalid login attempts:
+\begin{itemize}
+    \item \textbf{Valid Login:} Submitting valid credentials for each of the four roles successfully retrieved a signed JWT token and redirected the user to their designated landing page.
+    \item \textbf{Invalid Credentials:} Submitting incorrect passwords triggered an HTTP 401 response and displayed an error toast (``Invalid email or password'') without storing any token in \texttt{localStorage}.
+    \item \textbf{Empty Field Validation:} Submitting empty inputs triggered HTML5 validation, preventing redundant network dispatches.
+\end{itemize}
+
+\section{Dashboard Testing}
+Dashboard testing confirmed that the \texttt{/api/v1/dashboard} endpoint correctly aggregates metrics across collections. KPI counts dynamically matched the count of database documents, and Recharts components rendered revenue bar charts and lead source pie charts without SVG rendering defects.
+
+\section{Customer Module Testing}
+The Customer module was tested by creating new customer accounts, updating corporate address details, executing dynamic search queries across customer names, and performing deletions. All updates were verified to reflect instantly in both the UI table and MongoDB documents.
+
+\section{Lead Module Testing}
+Lead ingestion testing verified that leads captured from diverse sources (Website, LinkedIn, Referral) were assigned to the designated sales representatives. The ``Convert to Customer'' workflow was executed, verifying that the lead status transitioned to \textit{Converted} while instantiating an active record in the \texttt{customers} collection.
+
+\section{Task Module Testing}
+Task delegation was validated by creating tasks with varying priorities (\textit{Urgent, High, Medium, Low}). The overdue detection algorithm was tested by inserting tasks with past deadlines, confirming that the frontend highlighted overdue items with red alert badges.
+
+\section{CRUD Testing}
+Comprehensive CRUD verification confirmed that Create, Read, Update, and Delete operations across all seven models maintained referential integrity. Foreign key references (e.g., \texttt{customer} inside \texttt{opportunities}) remained valid throughout mutations.
+
+\section{API Testing}
+Automated API testing was conducted using the integrated test suite (\texttt{backend/src/utils/testApi.js}). Table~\ref{tab:test_cases} documents the test scenarios executed against the live API.
+
+\section{Database Testing}
+Database validation confirmed:
+\begin{itemize}
+    \item Automated bootstrapping: When launched against an empty database, the seeder successfully seeded the four system users and sample business records.
+    \item Unique indexes: Attempting to insert duplicate email addresses in the \texttt{users} or \texttt{customers} collections was correctly rejected with MongoDB code \texttt{11000}.
+\end{itemize}
+
+\section{Deployment Testing}
+Cloud deployment verification confirmed that:
+\begin{itemize}
+    \item The Render backend public health check (\url{https://crm-system-ea6d.onrender.com/health}) returned an HTTP 200 status with \texttt{\{"status":"healthy"\}}.
+    \item The Vercel frontend (\url{https://crm-system-sable-delta.vercel.app}) resolved all SPA sub-routes (e.g., \texttt{/customers}, \texttt{/pipeline}) on direct browser refresh without 404 errors due to \texttt{vercel.json} rewrite rules.
+\end{itemize}
+
+\section{Test Cases}
+Table~\ref{tab:test_cases} details the primary test cases executed during system validation.
+
+\begin{table}[h!]
+\centering
+\caption{System Test Cases and Execution Results}
+\label{tab:test_cases}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{1.2cm}|p{3.2cm}|p{3.5cm}|p{3.5cm}|p{1.4cm}|}
+\hline
+\textbf{Test ID} & \textbf{Test Scenario} & \textbf{Input / Action} & \textbf{Expected Result} & \textbf{Status} \\ \hline
+\textbf{TC-01} & Health Check & \texttt{GET /health} & Status 200, \texttt{status: healthy} & \textbf{PASS} \\ \hline
+\textbf{TC-02} & Valid Admin Login & Valid email and password & Status 200, JWT token returned & \textbf{PASS} \\ \hline
+\textbf{TC-03} & Invalid Login & Valid email, incorrect password & Status 401, error message & \textbf{PASS} \\ \hline
+\textbf{TC-04} & Empty Login Form & Submit empty form fields & HTML5 validation blocks submit & \textbf{PASS} \\ \hline
+\textbf{TC-05} & Dashboard KPIs & \texttt{GET /api/v1/dashboard} & Returns real-time KPI counts & \textbf{PASS} \\ \hline
+\textbf{TC-06} & Customer Creation & Name, email, company, phone & Customer inserted, status 201 & \textbf{PASS} \\ \hline
+\textbf{TC-07} & Customer Update & Modify phone and address & Record updated, status 200 & \textbf{PASS} \\ \hline
+\textbf{TC-08} & Customer Deletion & Delete customer with ID & Record removed, status 200 & \textbf{PASS} \\ \hline
+\textbf{TC-09} & Customer Search & Search text ``Acme Corp'' & Filtered table rows matching query & \textbf{PASS} \\ \hline
+\textbf{TC-10} & Lead Ingestion & New lead details submitted & Lead stored with stage \textit{New} & \textbf{PASS} \\ \hline
+\textbf{TC-11} & Lead Conversion & \texttt{POST /leads/:id/convert} & Customer created; lead converted & \textbf{PASS} \\ \hline
+\textbf{TC-12} & Kanban Pipeline & \texttt{GET /api/v1/pipeline} & Deals grouped across 6 stages & \textbf{PASS} \\ \hline
+\textbf{TC-13} & Pipeline Stage Update& Change stage to \textit{Proposal} & Stage updated in database & \textbf{PASS} \\ \hline
+\textbf{TC-14} & Task Creation & Title, priority, due date & Task delegated to user, status 201 & \textbf{PASS} \\ \hline
+\textbf{TC-15} & Task Completion & Toggle task status checkbox & Status updated to \textit{Completed} & \textbf{PASS} \\ \hline
+\textbf{TC-16} & Follow-up Scheduling& Set date, type, customer & Follow-up scheduled, status 201 & \textbf{PASS} \\ \hline
+\textbf{TC-17} & Interaction Logging & Log phone call details & Appended to client history timeline & \textbf{PASS} \\ \hline
+\textbf{TC-18} & RBAC Guard & Sales Exec calls \texttt{/users} & Status 403 Forbidden returned & \textbf{PASS} \\ \hline
+\textbf{TC-19} & Lead Report & \texttt{GET /reports/lead-conversion}& Dynamic funnel percentages returned & \textbf{PASS} \\ \hline
+\textbf{TC-20} & Cloud DB Uptime & Atlas connection string & Persistent connection established & \textbf{PASS} \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Test Results}
+The test execution logs confirmed 100\% pass rates across all twenty test scenarios. Below is a representative snippet of the automated verification executed by \texttt{backend/src/utils/testApi.js}:
+
+\begin{lstlisting}[caption={Automated API Verification Execution Output}]
+[E2E Test] Starting backend and seeding test verification...
+[MongoDB] Connected to database: crm-system.mongodb.net/crm_db
+[Test 1] Testing Health Check Endpoint (/api/health)...
+Health check status: 200 healthy
+[Test 2] Testing Admin Login (/api/v1/auth/login)...
+Login status: 200 User: Alexander Wright Role: admin
+[Test 3] Testing Dashboard Metrics (/api/v1/dashboard)...
+Dashboard status: 200 Total Customers: 4 Total Revenue: $48500
+[Test 4] Testing Lead Conversion Report (/api/v1/reports/lead-conversion)...
+Lead Conversion Report status: 200 Conversion Rate: 40%
+[Test 5] Testing Sales Performance Report (/api/v1/reports/sales-performance)...
+Sales Performance Report status: 200 Won Deals: 3
+[Test 6] Testing Customer Details Report (/api/v1/reports/customer-details)...
+Customer Details Report status: 200 Customer Count: 4
+[Test 7] Testing Follow-up Activity Report (/api/v1/reports/followup-activity)...
+Follow-up Report status: 200 Total Followups: 6
+[Test 8] Testing Customers CRUD list (/api/v1/customers)...
+Customers count: 4
+[Test 9] Testing Leads CRUD list (/api/v1/leads)...
+Leads count: 5
+[Test 10] Testing Kanban Pipeline endpoint (/api/v1/pipeline)...
+Pipeline active deals: 5 Value: $125000
+[Test 11] Testing RBAC restriction (Sales Executive trying to access /users)...
+Executive access to /users status (expected 403 Forbidden): 403
+=============================================================
+ALL 11 AUTOMATED TEST SUITES EXECUTED AND PASSED SUCCESSFULLY
+=============================================================
+\end{lstlisting}

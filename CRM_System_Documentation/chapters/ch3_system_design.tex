@@ -1,0 +1,592 @@
+\chapter{SYSTEM DESIGN}
+
+\section{System Architecture}
+The Customer Relationship Management (CRM) System is designed following modern cloud-native architectural patterns, emphasizing high modularity, loose coupling, horizontal scalability, and comprehensive security boundaries. As illustrated in Figure~\ref{fig:overall_architecture}, the system decouples client presentation from business logic computation and data persistence, communicating over encrypted HTTPS via stateless JSON-based RESTful protocols.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.95, every node/.style={transform shape},
+    box/.style={rectangle, draw=blue!70, fill=blue!5, thick, rounded corners, minimum width=3.4cm, minimum height=1.3cm, align=center, font=\small},
+    nodeBox/.style={rectangle, draw=teal!70, fill=teal!5, thick, rounded corners, minimum width=3.4cm, minimum height=1.3cm, align=center, font=\small},
+    dbBox/.style={cylinder, draw=orange!70, fill=orange!5, shape border rotate=90, aspect=0.25, thick, minimum width=3.2cm, minimum height=1.5cm, align=center, font=\small},
+    cloudBox/.style={rectangle, draw=gray!60, fill=gray!5, dashed, rounded corners, inner sep=12pt},
+    arrow/.style={-{Latex[length=3mm]}, thick, draw=blue!80}
+]
+
+% Client Devices
+\node[box] (browser) at (0, 4.5) {\textbf{Client Browser}\\\footnotesize Desktop, Tablet, Mobile\\(React 18 / Tailwind)};
+\node[box, fill=purple!5, draw=purple!70] (vercel) at (5, 4.5) {\textbf{Vercel Edge Network}\\\footnotesize Global CDN Hosting\\\texttt{*.vercel.app}};
+
+% Backend Server
+\node[nodeBox] (api) at (5, 1.5) {\textbf{Node.js / Express API}\\\footnotesize REST Controllers \& RBAC\\\texttt{*.onrender.com}};
+
+% Database
+\node[dbBox] (mongo) at (10, 1.5) {\textbf{MongoDB Atlas}\\\footnotesize Cloud Managed Cluster\\\texttt{crm\_db}};
+
+% DevOps & Delivery
+\node[box, fill=green!5, draw=green!70] (github) at (0, 1.5) {\textbf{GitHub Repository}\\\footnotesize Version Control \& CI\\\texttt{Kowshik1759/CRM-System}};
+
+% Flow Arrows
+\draw[arrow] (browser) -- node[above, font=\scriptsize] {HTTPS Requests} (vercel);
+\draw[arrow] (vercel) -- node[right, font=\scriptsize] {SPA Static Delivery} (browser);
+\draw[arrow] (browser) |- node[near start, left, font=\scriptsize] {REST Calls (JWT)} (api);
+\draw[arrow] (api) -- node[above, font=\scriptsize] {Mongoose ODM} node[below, font=\scriptsize] {Connection Pool} (mongo);
+\draw[arrow, dashed] (github) -- node[above, font=\scriptsize] {Webhook / Deploy} (vercel);
+\draw[arrow, dashed] (github) -- node[above, font=\scriptsize] {Git Push Deploy} (api);
+
+\end{tikzpicture}
+\caption{Overall High-Level System Architecture and Cloud Topology}
+\label{fig:overall_architecture}
+\end{figure}
+
+\section{Three-Tier Architecture}
+The CRM System adheres strictly to the classic Three-Tier Architectural model described by Fowler~\cite{fowler2002patterns}, cleanly segregating concerns across Presentation, Application Logic, and Data Storage tiers (Figure~\ref{fig:three_tier}).
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.92, every node/.style={transform shape},
+    tierBox/.style={rectangle, draw=gray!70, fill=gray!3, thick, rounded corners=6pt, inner sep=10pt},
+    comp/.style={rectangle, draw=navy!80, fill=blue!10, rounded corners=4pt, thick, minimum width=3.8cm, minimum height=1cm, align=center, font=\footnotesize},
+    arrow/.style={{Latex[length=2.5mm]}-{Latex[length=2.5mm]}, thick, draw=blue!80}
+]
+
+% Tier 1: Presentation
+\node[comp] (ui1) at (0, 6) {React 18 SPA Views\\(12 Modular Screens)};
+\node[comp] (ui2) at (4.5, 6) {React Router DOM\\(Client Route Guards)};
+\node[comp] (ui3) at (9, 6) {Axios HTTP Client\\(JWT Interceptors)};
+\begin{scope}[on background layer]
+    \node[tierBox, fit=(ui1) (ui3), label={[font=\small\bfseries]above:Tier 1: Presentation Layer (Vercel Edge Host)}] (tier1) {};
+\end{scope}
+
+% Tier 2: Application Logic
+\node[comp, fill=teal!10, draw=teal!80] (srv1) at (0, 3) {Express REST Router\\(11 Route Groups)};
+\node[comp, fill=teal!10, draw=teal!80] (srv2) at (4.5, 3) {Auth \& RBAC Middleware\\(JWT Verify \& Roles)};
+\node[comp, fill=teal!10, draw=teal!80] (srv3) at (9, 3) {Business Controllers\\(CRUD \& Aggregations)};
+\begin{scope}[on background layer]
+    \node[tierBox, fit=(srv1) (srv3), label={[font=\small\bfseries]above:Tier 2: Business Logic Layer (Render Node.js Service)}] (tier2) {};
+\end{scope}
+
+% Tier 3: Data Tier
+\node[comp, fill=orange!10, draw=orange!80] (db1) at (0, 0) {Mongoose ODM\\(Schemas \& Hooks)};
+\node[comp, fill=orange!10, draw=orange!80] (db2) at (4.5, 0) {MongoDB Atlas\\(Replica Set Collections)};
+\node[comp, fill=orange!10, draw=orange!80] (db3) at (9, 0) {Aggregations \& Indexes\\(\$facet, \$group, \$project)};
+\begin{scope}[on background layer]
+    \node[tierBox, fit=(db1) (db3), label={[font=\small\bfseries]above:Tier 3: Data Storage Tier (MongoDB Atlas Cloud)}] (tier3) {};
+\end{scope}
+
+% Connectors
+\draw[arrow] (tier1.south) -- node[right, font=\scriptsize] {HTTPS / JSON Payloads (JWT Bearer Token)} (tier2.north);
+\draw[arrow] (tier2.south) -- node[right, font=\scriptsize] {MongoDB Wire Protocol (TCP 27017 TLS)} (tier3.north);
+
+\end{tikzpicture}
+\caption{Three-Tier Enterprise Web Architectural Model}
+\label{fig:three_tier}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Presentation Tier (Client):} Engineered as a single-page application (SPA) with React 18, Vite, and Tailwind CSS. It manages local component state, renders accessible user interfaces, enforces client route guards, and communicates with the backend via Axios interceptors.
+    \item \textbf{Application Logic Tier (Server):} Implemented using Node.js and Express.js. It encapsulates stateless business rules, input validation, role-based authorization gates, cryptographic hashing, and RESTful routing.
+    \item \textbf{Data Tier (Database):} Managed through MongoDB Atlas. It enforces data integrity via Mongoose schemas, manages relational document references, executes multi-stage analytical aggregations, and provides automated high availability.
+\end{itemize}
+
+\section{Frontend Architecture}
+The frontend React architecture follows a component-driven design pattern:
+\begin{itemize}
+    \item \textbf{Context State Providers:} \texttt{AuthContext.jsx} maintains global user state, login tokens, and active permissions; \texttt{ToastContext.jsx} provides non-blocking visual feedback for mutations.
+    \item \textbf{Route Guarding Shell:} \texttt{ProtectedRoute.jsx} wraps private routes, inspecting user authentication tokens and role allowances before allowing DOM mounting.
+    \item \textbf{Shared Layout:} \texttt{DashboardLayout.jsx} houses the collapsible \texttt{Sidebar.jsx} and responsive \texttt{TopNavbar.jsx}, ensuring visual continuity across all twelve screens.
+    \item \textbf{Modular API Client:} \texttt{axiosClient.js} establishes a centralized Axios instance configured with automatic \texttt{Bearer} token injection and response interceptors handling 401 session expiration redirects.
+\end{itemize}
+
+\section{Backend Architecture}
+The Express.js backend is structured into modular layers adhering to separation of concerns:
+\begin{itemize}
+    \item \textbf{Server Entry (\texttt{server.js}):} Configures Express middleware (JSON body parsing, CORS, Morgan request logging), registers route modules, binds error handlers, and invokes database bootstrap routines.
+    \item \textbf{Route Handlers (\texttt{routes/}):} Map incoming HTTP verbs and endpoints to specific controller functions, injecting \texttt{protect} and \texttt{authorize} middleware.
+    \item \textbf{Business Controllers (\texttt{controllers/}):} Implement transactional logic, query formation, input sanitization, error propagation, and HTTP response formatting.
+    \item \textbf{Data Models (\texttt{models/}):} Define strict Mongoose schemas with validation constraints, pre-save cryptographic hooks, compound indexes, and virtual references.
+\end{itemize}
+
+\section{Database Architecture}
+The persistence tier uses MongoDB Atlas, a cloud-hosted distributed document database. Collections are structured with relational Object-Id cross-references (e.g., linking a \texttt{Lead} or \texttt{Opportunity} to an assigned \texttt{User} and converted \texttt{Customer}). Indexing strategies ensure fast query execution:
+\begin{itemize}
+    \item Unique index on \texttt{User.email} and \texttt{Customer.email}.
+    \item Single-field indexes on \texttt{assignedTo}, \texttt{status}, \texttt{stage}, and \texttt{dueDate}.
+    \item Compound index on \texttt{\{ customer: 1, createdAt: -1 \}} for chronological interaction timeline retrieval.
+\end{itemize}
+
+\section{System Workflow}
+The operational lifecycle within the CRM commences with secure user authentication. Once verified, the user is transitioned to their designated landing screen based on their role. A Sales Executive processes incoming leads, progresses opportunities across the Kanban pipeline, schedules follow-up calls, delegates operational tasks, and documents interactions. Simultaneously, Sales Managers review real-time conversion rates and assign unallocated leads, while Administrators oversee employee accounts and audit reports.
+
+\section{Use Case Diagram}
+Figure~\ref{fig:use_case} details the system use case diagram, mapping interactions between the four primary actors and the functional use cases.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, every node/.style={transform shape},
+    actor/.style={circle, draw=blue!80, fill=blue!10, thick, minimum size=1cm, font=\bfseries\footnotesize, align=center},
+    uc/.style={ellipse, draw=teal!80, fill=teal!5, thick, minimum width=3.4cm, minimum height=0.9cm, align=center, font=\scriptsize}
+]
+
+% Actors
+\node[actor] (admin) at (-4, 5) {Admin};
+\node[actor] (mgr) at (-4, 2) {Sales\\Mgr};
+\node[actor] (exec) at (-4, -1) {Sales\\Exec};
+\node[actor] (supp) at (-4, -4) {Cust\\Support};
+
+% Use Cases
+\node[uc] (uc_login) at (1, 6) {Login / Authenticate};
+\node[uc] (uc_users) at (1, 4.5) {Manage Staff Accounts};
+\node[uc] (uc_leads) at (1, 3) {Assign \& Manage Leads};
+\node[uc] (uc_pipe) at (1, 1.5) {Update Kanban Pipeline};
+\node[uc] (uc_opps) at (1, 0) {Track Opportunities};
+\node[uc] (uc_tasks) at (1, -1.5) {Manage Tasks \& Follow-ups};
+\node[uc] (uc_cust) at (1, -3) {Manage Customers};
+\node[uc] (uc_inter) at (1, -4.5) {Log Interactions / Notes};
+\node[uc] (uc_reps) at (1, -6) {Generate Business Reports};
+
+% Connections: Admin (has access to all)
+\draw (admin) -- (uc_login);
+\draw (admin) -- (uc_users);
+\draw (admin) -- (uc_leads);
+\draw (admin) -- (uc_pipe);
+\draw (admin) -- (uc_cust);
+\draw (admin) -- (uc_reps);
+
+% Connections: Sales Manager
+\draw (mgr) -- (uc_login);
+\draw (mgr) -- (uc_leads);
+\draw (mgr) -- (uc_pipe);
+\draw (mgr) -- (uc_opps);
+\draw (mgr) -- (uc_reps);
+
+% Connections: Sales Executive
+\draw (exec) -- (uc_login);
+\draw (exec) -- (uc_leads);
+\draw (exec) -- (uc_pipe);
+\draw (exec) -- (uc_tasks);
+\draw (exec) -- (uc_cust);
+\draw (exec) -- (uc_inter);
+
+% Connections: Customer Support
+\draw (supp) -- (uc_login);
+\draw (supp) -- (uc_cust);
+\draw (supp) -- (uc_inter);
+
+\end{tikzpicture}
+\caption{UML Use Case Diagram Illustrating Multi-Actor Permissions}
+\label{fig:use_case}
+\end{figure}
+
+\section{Data Flow Diagram -- Level 0}
+Figure~\ref{fig:dfd_level0} illustrates the Context Diagram (DFD Level 0), modeling information flows across external actors and the centralized CRM System.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.92, every node/.style={transform shape},
+    entity/.style={rectangle, draw=blue!80, fill=blue!10, thick, minimum width=2.8cm, minimum height=1.2cm, align=center, font=\small\bfseries},
+    proc/.style={circle, draw=orange!80, fill=orange!10, thick, minimum size=3cm, align=center, font=\small\bfseries},
+    arrow/.style={-{Latex[length=2.5mm]}, thick, draw=black!70}
+]
+
+\node[proc] (crm) at (0, 0) {0.0\\Centralized\\CRM\\System};
+
+\node[entity] (admin) at (-5, 2.5) {Administrator};
+\node[entity] (mgr) at (-5, -2.5) {Sales Manager};
+\node[entity] (exec) at (5, 2.5) {Sales Executive};
+\node[entity] (client) at (5, -2.5) {Customer / Lead};
+
+\draw[arrow] (admin) -- node[above, sloped, font=\scriptsize] {Staff Configurations} (crm);
+\draw[arrow] (crm) -- node[below, sloped, font=\scriptsize] {System Metrics \& Audit} (admin);
+
+\draw[arrow] (mgr) -- node[above, sloped, font=\scriptsize] {Lead Assignments} (crm);
+\draw[arrow] (crm) -- node[below, sloped, font=\scriptsize] {Sales Reports \& KPIs} (mgr);
+
+\draw[arrow] (exec) -- node[above, sloped, font=\scriptsize] {Deal Status, Calls, Tasks} (crm);
+\draw[arrow] (crm) -- node[below, sloped, font=\scriptsize] {Pipeline, Follow-up Alerts} (exec);
+
+\draw[arrow] (client) -- node[above, sloped, font=\scriptsize] {Inquiries, Contact Details} (crm);
+\draw[arrow] (crm) -- node[below, sloped, font=\scriptsize] {Quotations, Callbacks} (client);
+
+\end{tikzpicture}
+\caption{Data Flow Diagram Level 0 (Context-Level Diagram)}
+\label{fig:dfd_level0}
+\end{figure}
+
+\section{Data Flow Diagram -- Level 1}
+Figure~\ref{fig:dfd_level1} decomposes the CRM into core processes and underlying data stores.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.88, every node/.style={transform shape},
+    proc/.style={circle, draw=teal!80, fill=teal!10, thick, minimum size=1.8cm, align=center, font=\scriptsize\bfseries},
+    dstore/.style={rectangle, draw=purple!80, fill=purple!5, thick, minimum width=2.6cm, minimum height=0.7cm, align=center, font=\scriptsize},
+    ext/.style={rectangle, draw=blue!80, fill=blue!10, thick, minimum width=2.4cm, minimum height=0.9cm, align=center, font=\scriptsize\bfseries},
+    arrow/.style={-{Latex[length=2.5mm]}, thick, draw=black!70}
+]
+
+% External entities
+\node[ext] (user) at (-5, 2) {System\\User};
+\node[ext] (admin) at (-5, -2) {System\\Admin};
+
+% Processes
+\node[proc] (p1) at (-1, 3) {1.0\\Auth \&\\Access};
+\node[proc] (p2) at (-1, 0.5) {2.0\\Lead \&\\Pipeline};
+\node[proc] (p3) at (-1, -2) {3.0\\Customer\\Mgmt};
+\node[proc] (p4) at (3.5, 1.8) {4.0\\Tasks \&\\Follow-ups};
+\node[proc] (p5) at (3.5, -1.8) {5.0\\Analytical\\Reports};
+
+% Data stores
+\node[dstore] (d1) at (-1, 4.8) {D1: Users Store};
+\node[dstore] (d2) at (1.2, 0.5) {D2: Leads Store};
+\node[dstore] (d3) at (1.2, -3.2) {D3: Customers Store};
+\node[dstore] (d4) at (6.5, 1.8) {D4: Tasks Store};
+\node[dstore] (d5) at (6.5, -1.8) {D5: Opportunities};
+
+% Connections
+\draw[arrow] (user) -- (p1);
+\draw[arrow] (p1) -- (d1);
+\draw[arrow] (user) -- (p2);
+\draw[arrow] (p2) -- (d2);
+\draw[arrow] (user) -- (p3);
+\draw[arrow] (p3) -- (d3);
+\draw[arrow] (user) -- (p4);
+\draw[arrow] (p4) -- (d4);
+\draw[arrow] (d2) -- (p5);
+\draw[arrow] (d3) -- (p5);
+\draw[arrow] (d5) -- (p5);
+\draw[arrow] (admin) -- (p1);
+\draw[arrow] (p5) -- (admin);
+
+\end{tikzpicture}
+\caption{Data Flow Diagram Level 1 (Functional Decomposition)}
+\label{fig:dfd_level1}
+\end{figure}
+
+\section{Entity Relationship Diagram}
+Figure~\ref{fig:erd_diagram} displays the logical entity-relationship schema among the seven core MongoDB document collections.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.85, every node/.style={transform shape},
+    entity/.style={rectangle, draw=navy!80, fill=blue!8, thick, rounded corners=2pt, minimum width=3.8cm, align=left, font=\scriptsize, inner sep=6pt},
+    rel/.style={draw=black!70, thick, -{Latex[length=2.5mm]}}
+]
+
+\node[entity] (user) at (0, 4.5) {
+\textbf{User (users)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+name: String\\
+email: String [Unique]\\
+password: String [Hashed]\\
+role: Enum [4 Roles]\\
+department: String\\
+isActive: Boolean
+};
+
+\node[entity] (cust) at (-5, 0.5) {
+\textbf{Customer (customers)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+name: String\\
+email: String\\
+phone: String\\
+company: String\\
+status: Enum\\
+assignedTo: ObjectId [FK]\\
+createdBy: ObjectId [FK]
+};
+
+\node[entity] (lead) at (5, 0.5) {
+\textbf{Lead (leads)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+name: String\\
+company: String\\
+source: Enum\\
+stage: Enum [6 Stages]\\
+expectedValue: Number\\
+assignedTo: ObjectId [FK]\\
+convertedCustId: ObjectId [FK]
+};
+
+\node[entity] (opp) at (5, -4) {
+\textbf{Opportunity (opportunities)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+title: String\\
+value: Number\\
+probability: Number\\
+stage: Enum [5 Stages]\\
+customer: ObjectId [FK]\\
+assignedTo: ObjectId [FK]
+};
+
+\node[entity] (task) at (-5, -4) {
+\textbf{Task (tasks)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+title: String\\
+priority: Enum [4 Levels]\\
+status: Enum\\
+dueDate: Date\\
+assignedTo: ObjectId [FK]\\
+customer: ObjectId [FK]
+};
+
+\node[entity] (follow) at (0, -1.8) {
+\textbf{FollowUp (followups)}\\
+\hline
+\underline{\_id}: ObjectId [PK]\\
+title: String\\
+scheduledDate: Date\\
+status: Enum\\
+type: Enum\\
+assignedTo: ObjectId [FK]\\
+customer: ObjectId [FK]
+};
+
+% Relationships
+\draw[rel] (user.west) -| node[above, near end, font=\tiny] {1 : N} (cust.north);
+\draw[rel] (user.east) -| node[above, near end, font=\tiny] {1 : N} (lead.north);
+\draw[rel] (user.south) -- node[right, font=\tiny] {1 : N} (follow.north);
+\draw[rel] (cust.south) -- node[left, font=\tiny] {1 : N} (task.north);
+\draw[rel] (lead.south) -- node[right, font=\tiny] {1 : N} (opp.north);
+\draw[rel] (cust.east) -- node[above, font=\tiny] {1 : N} (follow.west);
+
+\end{tikzpicture}
+\caption{Entity-Relationship Diagram with MongoDB Foreign Key Object-Id References}
+\label{fig:erd_diagram}
+\end{figure}
+
+\section{Database Design}
+The database schemas for the seven collections implemented in Mongoose are defined in Tables~\ref{tab:schema_user} through~\ref{tab:schema_interaction}.
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{users} Collection}
+\label{tab:schema_user}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Unique system document identifier \\ \hline
+\texttt{name} & String & Required, Trimmed & Full name of the employee \\ \hline
+\texttt{email} & String & Required, Unique, Lower & Corporate email address for login \\ \hline
+\texttt{password} & String & Required, Min 6, Hidden & Bcrypt salted and hashed password \\ \hline
+\texttt{role} & String & Enum, Default: \texttt{sales\_executive} & Role: admin, sales\_manager, sales\_executive, customer\_support \\ \hline
+\texttt{phone} & String & Optional, Trimmed & Contact telephone number \\ \hline
+\texttt{department} & String & Default: 'Sales' & Organizational operational department \\ \hline
+\texttt{isActive} & Boolean & Default: \texttt{true} & Account status toggle for authentication \\ \hline
+\texttt{createdAt} & Date & Auto Timestamp & System record generation timestamp \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{customers} Collection}
+\label{tab:schema_customer}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Customer unique identifier \\ \hline
+\texttt{name} & String & Required, Trimmed & Primary client contact name \\ \hline
+\texttt{email} & String & Required, Unique & Primary business email address \\ \hline
+\texttt{phone} & String & Required & Direct telephone contact number \\ \hline
+\texttt{company} & String & Required & Name of the client commercial entity \\ \hline
+\texttt{address} & String & Optional & Street address \\ \hline
+\texttt{status} & String & Enum: \texttt{lead, active, inactive} & Current operational account state \\ \hline
+\texttt{assignedTo} & ObjectId & Ref: \texttt{User} & Sales executive assigned to account \\ \hline
+\texttt{createdBy} & ObjectId & Ref: \texttt{User} & User account who generated record \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{leads} Collection}
+\label{tab:schema_lead}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Lead unique record identifier \\ \hline
+\texttt{name} & String & Required, Trimmed & Prospective contact individual \\ \hline
+\texttt{email} & String & Required & Inbound inquiry email \\ \hline
+\texttt{company} & String & Required & Prospect commercial organization \\ \hline
+\texttt{source} & String & Enum [Website, Referral, etc.] & Inbound channel origin \\ \hline
+\texttt{stage} & String & Enum [6 Kanban Stages] & Pipeline qualification progress \\ \hline
+\texttt{expectedValue}& Number & Default: 0, Min: 0 & Projected commercial contract value \\ \hline
+\texttt{assignedTo} & ObjectId & Ref: \texttt{User} & Allocated sales representative \\ \hline
+\texttt{convertedCustId}& ObjectId & Ref: \texttt{Customer}, Optional & ID of converted customer record \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{opportunities} Collection}
+\label{tab:schema_opportunity}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Opportunity deal identifier \\ \hline
+\texttt{title} & String & Required & Deal commercial headline \\ \hline
+\texttt{value} & Number & Required, Min: 0 & Expected financial deal revenue \\ \hline
+\texttt{probability} & Number & Min: 0, Max: 100 & Deal closing confidence percentage \\ \hline
+\texttt{stage} & String & Enum [5 Stages] & Qualification to Closed Won/Lost \\ \hline
+\texttt{customer} & ObjectId & Ref: \texttt{Customer} & Associated client account \\ \hline
+\texttt{assignedTo} & ObjectId & Ref: \texttt{User} & Opportunity owner representative \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{tasks} Collection}
+\label{tab:schema_task}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Task item unique identifier \\ \hline
+\texttt{title} & String & Required & Task title and directive \\ \hline
+\texttt{priority} & String & Enum: low, medium, high, urgent & Urgency escalation indicator \\ \hline
+\texttt{status} & String & Enum: pending, completed, etc. & Work execution status \\ \hline
+\texttt{dueDate} & Date & Required & Target deadline for completion \\ \hline
+\texttt{assignedTo} & ObjectId & Ref: \texttt{User} & Designated employee assignee \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{followups} Collection}
+\label{tab:schema_followup}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Follow-up schedule identifier \\ \hline
+\texttt{title} & String & Required & Purpose of scheduled contact \\ \hline
+\texttt{scheduledDate}& Date & Required & Timestamp for callback/meeting \\ \hline
+\texttt{type} & String & Enum: call, email, meeting, demo & Contact modality format \\ \hline
+\texttt{status} & String & Enum: pending, completed, overdue & Activity adherence state \\ \hline
+\texttt{customer} & ObjectId & Ref: \texttt{Customer} & Targeted client profile \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Database Schema: \texttt{interactions} Collection}
+\label{tab:schema_interaction}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3.5cm}|p{4.5cm}|}
+\hline
+\textbf{Field Name} & \textbf{Data Type} & \textbf{Constraints} & \textbf{Description} \\ \hline
+\texttt{\_id} & ObjectId & Primary Key, Auto & Historical interaction log entry \\ \hline
+\texttt{type} & String & Enum: call, meeting, email, note & Interaction channel format \\ \hline
+\texttt{subject} & String & Required & Brief topic of client discussion \\ \hline
+\texttt{details} & String & Required & Detailed discussion notes \\ \hline
+\texttt{performedBy} & ObjectId & Ref: \texttt{User} & Employee who executed contact \\ \hline
+\texttt{customer} & ObjectId & Ref: \texttt{Customer} & Associated client account \\ \hline
+\end{tabular}
+\end{table}
+
+\section{UML Activity Diagram}
+Figure~\ref{fig:activity_lead} demonstrates the operational activity workflow of a prospective lead from initial capture to customer conversion.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, every node/.style={transform shape},
+    startStop/.style={circle, fill=black, minimum size=0.6cm},
+    action/.style={rectangle, draw=blue!80, fill=blue!10, rounded corners=6pt, thick, minimum width=3.8cm, minimum height=0.9cm, align=center, font=\scriptsize},
+    decision/.style={diamond, draw=orange!80, fill=orange!10, thick, aspect=2, minimum width=2.8cm, align=center, font=\tiny\bfseries},
+    arrow/.style={-{Latex[length=2.5mm]}, thick, draw=black!70}
+]
+
+\node[startStop] (start) at (0, 7) {};
+\node[action] (a1) at (0, 5.8) {Capture Lead Inbound\\(Website, Referral, Event)};
+\node[action] (a2) at (0, 4.4) {Assign Lead to Sales Executive\\(Auto or Manager Allocation)};
+\node[action] (a3) at (0, 3.0) {Initiate Contact \& Schedule\\Follow-up Call / Meeting};
+\node[decision] (d1) at (0, 1.4) {Is Lead\\Qualified?};
+\node[action, fill=red!10, draw=red!70] (lost) at (4, 1.4) {Update Stage:\\\textbf{Lost / Disqualified}};
+\node[action] (a4) at (0, -0.4) {Prepare \& Deliver\\Commercial Proposal};
+\node[decision] (d2) at (0, -2.0) {Proposal\\Accepted?};
+\node[action, fill=green!10, draw=green!70] (win) at (0, -3.8) {Convert Lead $\rightarrow$ Customer\\Create Opportunity Won};
+\node[circle, draw=black, double, inner sep=3pt, fill=black] (finish) at (0, -5.2) {};
+
+% Flows
+\draw[arrow] (start) -- (a1);
+\draw[arrow] (a1) -- (a2);
+\draw[arrow] (a2) -- (a3);
+\draw[arrow] (a3) -- (d1);
+\draw[arrow] (d1) -- node[above, font=\tiny] {No} (lost);
+\draw[arrow] (d1) -- node[left, font=\tiny] {Yes} (a4);
+\draw[arrow] (a4) -- (d2);
+\draw[arrow] (d2) -| node[above, near start, font=\tiny] {No} (lost);
+\draw[arrow] (d2) -- node[left, font=\tiny] {Yes} (win);
+\draw[arrow] (win) -- (finish);
+\draw[arrow] (lost) |- (finish);
+
+\end{tikzpicture}
+\caption{UML Activity Diagram: Complete Commercial Lead Lifecycle}
+\label{fig:activity_lead}
+\end{figure}
+
+\section{Sequence Diagram}
+Figure~\ref{fig:sequence_login} illustrates the sequence of interactions among the Client Browser, Axios Interceptor, Express Auth Router, and MongoDB Atlas during user authentication.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    scale=0.9, every node/.style={transform shape},
+    lifeline/.style={draw=black!50, dashed, thick},
+    actorBox/.style={rectangle, draw=blue!80, fill=blue!10, thick, rounded corners=2pt, minimum width=2.4cm, minimum height=0.8cm, align=center, font=\scriptsize\bfseries},
+    msg/.style={-{Latex[length=2mm]}, thick, draw=black!70, font=\tiny},
+    reply/.style={{Latex[length=2mm]}-, dashed, thick, draw=black!70, font=\tiny}
+]
+
+% Lifeline headers
+\node[actorBox] (c) at (0, 0) {User / Browser};
+\node[actorBox] (ax) at (3.5, 0) {Axios Client};
+\node[actorBox] (api) at (7.5, 0) {Express API};
+\node[actorBox] (db) at (11.5, 0) {MongoDB Atlas};
+
+% Lifelines
+\draw[lifeline] (c) -- (0, -6.5);
+\draw[lifeline] (ax) -- (3.5, -6.5);
+\draw[lifeline] (api) -- (7.5, -6.5);
+\draw[lifeline] (db) -- (11.5, -6.5);
+
+% Messages
+\draw[msg] (0, -1) -- node[above] {1: Submits Email / Password} (3.5, -1);
+\draw[msg] (3.5, -1.8) -- node[above] {2: POST /api/v1/auth/login} (7.5, -1.8);
+\draw[msg] (7.5, -2.6) -- node[above] {3: findOne(\{ email \}).select('+password')} (11.5, -2.6);
+\draw[reply] (7.5, -3.4) -- node[above] {4: Returns User Document} (11.5, -3.4);
+\draw[msg] (7.5, -4.2) -- node[above] {5: bcrypt.compare(plain, hash) \& Sign JWT} (7.5, -4.2);
+\draw[reply] (3.5, -5.0) -- node[above] {6: Returns \{ success: true, token, user \}} (7.5, -5.0);
+\draw[reply] (0, -5.8) -- node[above] {7: Stores token in localStorage \& Navigates to Dashboard} (3.5, -5.8);
+
+\end{tikzpicture}
+\caption{UML Sequence Diagram: Authentication and JWT Generation Protocol}
+\label{fig:sequence_login}
+\end{figure}
+
+\section{Authentication Workflow}
+The authentication workflow guarantees stateless identity verification. When a user submits credentials, the server retrieves the corresponding record, verifies the bcrypt hash, checks the \texttt{isActive} boolean flag, and generates a signed JWT payload containing \texttt{\{ id: user.\_id, role: user.role \}} with a 7-day expiration. The client caches the token in browser \texttt{localStorage} and mounts protected layout trees.
+
+\section{Customer Management Workflow}
+The Customer module permits authorized staff to maintain business accounts. When creating a customer, input validation checks unique email constraints. Modifications update the record timestamp, and delete requests are protected by a confirmation modal dialog, updating linked interactions.
+
+\section{Lead Management Workflow}
+Leads enter the system with a default stage of \textit{New}. A sales representative qualifies the prospect by capturing contact requirements, estimated value, and acquisition channel. Converting a lead generates a persistent customer document, updates the lead status to \textit{Converted}, and establishes an associated initial sales opportunity.
+
+\section{Task Management Workflow}
+Tasks facilitate team delegation. A manager or representative specifies a task title, priority, due date, and assigned employee. The system monitors upcoming deadlines, categorizes items dynamically into Pending, In Progress, or Completed states, and surfaces overdue task alerts on the central executive dashboard.

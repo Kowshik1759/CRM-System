@@ -1,0 +1,196 @@
+\chapter{REQUIREMENT ANALYSIS}
+
+\section{Project Overview}
+Requirement analysis constitutes a foundational phase in enterprise software engineering, defining the functional boundaries, operational behavior, performance benchmarks, and constraints of the proposed system. For the Customer Relationship Management (CRM) System, requirements were gathered by examining common operational friction points encountered by small and medium-sized business sales teams, customer service representatives, and organizational executives.
+
+The resulting specification defines a robust, modular, and cloud-native MERN architecture capable of managing the full commercial customer lifecycle—from initial lead ingestion and qualification to opportunity conversion, account management, interaction documentation, task execution, and managerial reporting.
+
+\section{Stakeholders and Users}
+The system defines four distinct enterprise user personas, each associated with specific operational responsibilities and system access boundaries, as summarized in Table~\ref{tab:user_roles}.
+
+\begin{table}[h!]
+\centering
+\caption{System Stakeholders, User Roles, and Permissions Matrix}
+\label{tab:user_roles}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3cm}|p{3.5cm}|p{7.5cm}|}
+\hline
+\textbf{User Role} & \textbf{Default Landing Screen} & \textbf{Authorized Operational Scope \& Responsibilities} \\ \hline
+\textbf{Admin} & Executive Dashboard (\texttt{/}) & 
+$\bullet$ Full root system authority across all database collections.\newline
+$\bullet$ Onboard, update, activate/deactivate user accounts.\newline
+$\bullet$ Manage customers, leads, opportunities, tasks, and follow-ups.\newline
+$\bullet$ Access all four analytical business reports and system metrics.\newline
+$\bullet$ Configure system settings, profile, and master data. \\ \hline
+\textbf{Sales Manager} & Executive Dashboard (\texttt{/}) & 
+$\bullet$ Monitor overall sales team performance and pipeline health.\newline
+$\bullet$ Inspect and assign incoming leads to sales executives.\newline
+$\bullet$ Track commercial opportunities and deal win/loss ratios.\newline
+$\bullet$ View team-wide follow-ups, tasks, and sales reports.\newline
+$\bullet$ Restricted from modifying system-wide user credentials. \\ \hline
+\textbf{Sales Executive} & Sales Pipeline (\texttt{/pipeline}) & 
+$\bullet$ View and manage assigned leads across Kanban pipeline stages.\newline
+$\bullet$ Create and update customer records and contact information.\newline
+$\bullet$ Schedule and complete customer follow-ups and action tasks.\newline
+$\bullet$ Document client interactions (calls, meetings, notes, emails).\newline
+$\bullet$ Convert qualified leads into customer accounts. \\ \hline
+\textbf{Customer Support} & Customers Registry (\texttt{/customers}) & 
+$\bullet$ Search, inspect, and retrieve customer account profiles.\newline
+$\bullet$ Review chronological communication and interaction histories.\newline
+$\bullet$ Log customer support inquiries, grievances, and meeting notes.\newline
+$\bullet$ Restricted from modifying sales deals or viewing financial reports. \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Functional Requirements}
+The functional requirements represent the fundamental capabilities and services provided by the CRM System. Each requirement is assigned a unique identifier (FR-XX) as detailed in Table~\ref{tab:functional_requirements}.
+
+\begin{table}[h!]
+\centering
+\caption{System Functional Requirements Specification}
+\label{tab:functional_requirements}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|p{1.8cm}|p{4.2cm}|p{6.8cm}|p{1.7cm}|}
+\hline
+\textbf{Req. ID} & \textbf{Functional Module} & \textbf{Requirement Description} & \textbf{Priority} \\ \hline
+\textbf{FR-01} & Authentication & Authenticate users using registered email and password credentials, returning a signed JWT upon success. & High \\ \hline
+\textbf{FR-02} & Password Security & Securely hash user passwords using bcrypt with a minimum salt factor of 10 prior to database persistence. & High \\ \hline
+\textbf{FR-03} & Route Guarding & Enforce client-side route guards and server-side RBAC middleware to prevent unauthorized screen/endpoint access. & High \\ \hline
+\textbf{FR-04} & Customer Management & Provide complete CRUD operations for customer records including name, email, phone, company, address, and status. & High \\ \hline
+\textbf{FR-05} & Customer Search & Enable real-time dynamic text search and multi-criteria status filtering across customer records. & Medium \\ \hline
+\textbf{FR-06} & Lead Management & Ingest, inspect, edit, and track leads categorized by source (Website, Referral, Cold Call, LinkedIn, etc.). & High \\ \hline
+\textbf{FR-07} & Lead Assignment & Allow Administrators and Sales Managers to allocate unassigned leads to specific sales executives. & High \\ \hline
+\textbf{FR-08} & Lead Conversion & Convert qualified leads into verified customer records automatically, preventing record duplication. & High \\ \hline
+\textbf{FR-09} & Kanban Pipeline & Display sales opportunities on an interactive Kanban board categorized across six standardized deal stages. & High \\ \hline
+\textbf{FR-10} & Stage Progression & Allow users to dynamically update lead stages (New $\rightarrow$ Contacted $\rightarrow$ Qualified $\rightarrow$ Proposal $\rightarrow$ Converted / Lost). & High \\ \hline
+\textbf{FR-11} & Opportunities Tracking & Create commercial deals with expected revenue, closing probability percentage, and target close dates. & High \\ \hline
+\textbf{FR-12} & Follow-up Scheduling & Schedule customer follow-up activities (Call, Meeting, Email, Demo) with reminder dates and priority markers. & High \\ \hline
+\textbf{FR-13} & Status Tracking & Categorize follow-ups dynamically into Pending, Completed, Cancelled, and Overdue states based on timestamps. & High \\ \hline
+\textbf{FR-14} & Task Delegation & Create and assign operational tasks to specific employees with assigned due dates, priorities, and descriptions. & Medium \\ \hline
+\textbf{FR-15} & Interaction Logging & Maintain an immutable, chronological interaction ledger linking calls, notes, and meetings with customers and leads. & High \\ \hline
+\textbf{FR-16} & Executive Dashboard & Provide aggregated KPIs (Total Revenue, Active Leads, Conversion Rate, Open Tasks) with interactive Recharts. & High \\ \hline
+\textbf{FR-17} & Analytical Reports & Generate four mandatory business reports directly from live MongoDB aggregation pipelines with CSV export. & High \\ \hline
+\textbf{FR-18} & User Administration & Provide administrators with tools to create, inspect, update, and toggle active status for staff accounts. & High \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Non-Functional Requirements}
+Non-functional requirements specify the architectural qualities, operational constraints, and performance parameters governing system execution.
+
+\subsection{Security}
+\begin{itemize}
+    \item \textbf{Authentication Integrity:} All protected API transactions must validate a cryptographically signed JSON Web Token (JWT) transmitted via the standard \texttt{Authorization: Bearer <token>} HTTP header.
+    \item \textbf{Credential Protection:} Plaintext passwords must never be stored, logged, or returned in API responses; Mongoose schemas must configure \texttt{select: false} on password attributes.
+    \item \textbf{CORS and Header Hardening:} The server must implement Cross-Origin Resource Sharing (CORS) whitelisting and enforce protective HTTP headers via Nginx and Express middleware.
+\end{itemize}
+
+\subsection{Performance}
+\begin{itemize}
+    \item \textbf{API Response Latency:} Standard CRUD API endpoints must achieve an average server response time under 200 milliseconds under normal operating loads.
+    \item \textbf{Client Bundle Optimization:} The frontend Vite production build must utilize code-splitting and asset compression, ensuring the initial bundle size remains below 500 KB gzipped.
+    \item \textbf{Database Query Optimization:} All searchable and foreign reference fields (\texttt{email}, \texttt{assignedTo}, \texttt{status}, \texttt{stage}) must be indexed in MongoDB to ensure $O(\log N)$ query traversal.
+\end{itemize}
+
+\subsection{Reliability and Availability}
+\begin{itemize}
+    \item \textbf{Fault Tolerance:} The backend must implement a centralized error-handling middleware that intercepts unhandled promise rejections without crashing the Node.js process.
+    \item \textbf{Uptime and Health Checking:} Cloud deployments on Render and Kubernetes must expose an unauthenticated \texttt{/health} probe returning HTTP 200 for continuous automated health monitoring.
+\end{itemize}
+
+\subsection{Usability and Accessibility}
+\begin{itemize}
+    \item \textbf{Responsive Reflow:} The user interface must dynamically adapt across standard viewports (390px mobile, 768px tablet, 1440px desktop) without horizontal scrolling or clipped modals.
+    \item \textbf{Visual Feedback:} Every asynchronous mutation (create, edit, delete) must trigger an intuitive toast notification and display loading skeletons during data fetches.
+\end{itemize}
+
+\section{Hardware Requirements}
+\subsection{Development Environment}
+\begin{itemize}
+    \item \textbf{Processor:} Quad-Core Intel Core i5 / AMD Ryzen 5 or higher.
+    \item \textbf{Memory (RAM):} 8 GB minimum (16 GB recommended for concurrent Docker containers).
+    \item \textbf{Storage:} 20 GB available SSD storage for Node modules, repository, and Docker images.
+    \item \textbf{Network:} Broadband internet connection with $>10$ Mbps bandwidth.
+\end{itemize}
+
+\subsection{Production Cloud Server Environment}
+\begin{itemize}
+    \item \textbf{Frontend Host (Vercel):} Global edge content delivery network (CDN) with automated SSD caching.
+    \item \textbf{Backend Compute (Render):} Cloud Web Service container instance with 512 MB RAM and 0.1 CPU core allocation.
+    \item \textbf{Database Cluster (MongoDB Atlas):} M0 Shared Cluster providing 512 MB storage, shared RAM, and automated multi-zone replication.
+\end{itemize}
+
+\subsection{Client Device Requirements}
+\begin{itemize}
+    \item \textbf{Client Hardware:} Any desktop, laptop, tablet, or smartphone equipped with 2 GB RAM and a display resolution of at least $375 \times 667$ pixels.
+\end{itemize}
+
+\section{Software Requirements}
+\begin{table}[h!]
+\centering
+\caption{Software Technology Stack and Dependency Specifications}
+\label{tab:software_stack}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3.5cm}|p{4.5cm}|p{6cm}|}
+\hline
+\textbf{Software Layer} & \textbf{Technology / Tool} & \textbf{Version / Specification} \\ \hline
+\textbf{Client Framework} & React.js & Version 18.2.0 \\ \hline
+\textbf{Build Tooling} & Vite & Version 5.2.8 \\ \hline
+\textbf{Styling Engine} & Tailwind CSS & Version 3.4.3 \\ \hline
+\textbf{Client Routing} & React Router DOM & Version 6.22.3 \\ \hline
+\textbf{HTTP Client} & Axios & Version 1.6.8 \\ \hline
+\textbf{Visualization} & Recharts & Version 2.12.3 \\ \hline
+\textbf{Icons} & Lucide React & Version 0.364.0 \\ \hline
+\textbf{Server Runtime} & Node.js & Version 20.x LTS / 24.x \\ \hline
+\textbf{Web Framework} & Express.js & Version 4.19.2 \\ \hline
+\textbf{Database Engine} & MongoDB Atlas & Version 7.0+ Cloud Managed \\ \hline
+\textbf{Database ODM} & Mongoose & Version 8.3.1 \\ \hline
+\textbf{Token Management} & JSON Web Token (\texttt{jsonwebtoken}) & Version 9.0.2 \\ \hline
+\textbf{Password Hashing} & Bcrypt.js & Version 2.4.3 \\ \hline
+\textbf{Containerization} & Docker \& Docker Compose & Docker Engine 24+ / Compose v2 \\ \hline
+\textbf{Orchestration} & Kubernetes (K8s) & Client v1.30+ / Minikube v1.33+ \\ \hline
+\textbf{Version Control} & Git \& GitHub & Git 2.40+ / GitHub Cloud Repository \\ \hline
+\textbf{Cloud Providers} & Vercel \& Render & Vercel Edge Hosting \& Render Web Service \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Feasibility Analysis}
+Before technical execution, a comprehensive feasibility assessment was conducted across technical, operational, and economic dimensions.
+
+\subsection{Technical Feasibility}
+The MERN technology stack is an established, industry-standard paradigm for modern web applications. JavaScript/TypeScript is employed across both client and server tiers, eliminating context switching and enabling unified data serialization. Node.js offers a non-blocking, event-driven I/O model well-suited for concurrent REST transactions. React 18 provides efficient virtual DOM reconciliation, component encapsulation, and unidirectional state management. MongoDB's native JSON document model mirrors JavaScript object structures directly, eliminating complex object-relational impedance mismatches. Therefore, the project is technically feasible.
+
+\subsection{Operational Feasibility}
+The system requires no specialized desktop software installation by end users. All operations are executed through any standard web browser on desktop or mobile devices. The user interface adheres to standard ergonomic principles, featuring familiar navigation sidebars, high-contrast badges, intuitive modal dialogues, and responsive tables. The inclusion of automated administrative seed data enables instant onboarding and demonstration of all four enterprise roles. Consequently, the operational feasibility is verified.
+
+\subsection{Economic Feasibility}
+The economic investment required for developing and operating this CRM System is effectively zero. The entire application is built using open-source libraries and frameworks licensed under MIT and Apache 2.0. Hosting is provisioned entirely within the generous, permanently free tiers of leading cloud providers:
+\begin{itemize}
+    \item \textbf{Vercel:} Free tier offering unlimited static deployments and global SSL.
+    \item \textbf{Render:} Free tier offering 750 monthly compute hours for web services.
+    \item \textbf{MongoDB Atlas:} Free M0 cluster offering 512 MB storage and automated backups.
+\end{itemize}
+The project delivers enterprise-level capability with zero software procurement expenses, confirming absolute economic feasibility.
+
+\section{System Constraints}
+\begin{itemize}
+    \item \textbf{Stateless API Constraint:} The backend server retains no in-memory session state; every request must carry its own JWT bearer authorization token.
+    \item \textbf{Single-Page Routing Constraint:} Because the frontend utilizes client-side React Router DOM, hosting environments (Vercel and Nginx) must be configured with URL rewrite rules directing all sub-paths to \texttt{/index.html} to avoid HTTP 404 errors on browser page reloads.
+    \item \textbf{Database Rate Limitations:} Free cloud clusters on MongoDB Atlas impose a ceiling of 500 concurrent connections, which is ample for small business operations but requires connection reuse.
+\end{itemize}
+
+\section{User Interface Requirements}
+The application specifies twelve fully interactive operational screens:
+\begin{enumerate}
+    \item \textbf{Login and Authentication Screen (\texttt{/login}):} User credential entry, demo account quick-fill triggers, remember-session controls, and invalid credential alerts.
+    \item \textbf{Executive Dashboard (\texttt{/}):} Real-time revenue KPI cards, active deals metrics, conversion percentage, and Recharts monthly revenue and lead source charts.
+    \item \textbf{Customer Management Screen (\texttt{/customers}):} Tabular customer registry, status badges, multi-criteria search, pagination, create/edit modal forms, and deletion confirmation dialogs.
+    \item \textbf{Lead Management Screen (\texttt{/leads}):} Prospective client intake, lead source tagging, expected deal value inputs, lead scoring, and automated conversion trigger.
+    \item \textbf{Sales Pipeline Screen (\texttt{/pipeline}):} Interactive Kanban board displaying deals across six pipeline columns with dynamic value totals per stage.
+    \item \textbf{Follow-up Management Screen (\texttt{/followups}):} Calendar-oriented follow-up scheduler, overdue status alerts, and completion toggles.
+    \item \textbf{Task Management Screen (\texttt{/tasks}):} Employee task delegation board with priority color indicators (Urgent, High, Medium, Low) and due-date trackers.
+    \item \textbf{Opportunities Screen (\texttt{/opportunities}):} Financial deal pipeline tracking expected revenue, win probability percentages, and projected close dates.
+    \item \textbf{Reports and Analytics Screen (\texttt{/reports}):} Multi-tab reporting suite providing Lead Conversion Funnels, Sales Rep Performance, Customer Profiles, and Follow-Up Adherence tables with CSV export.
+    \item \textbf{User Administration Screen (\texttt{/users}):} Admin-only staff console for onboarding employees, modifying roles, and toggling active status.
+    \item \textbf{Customer Interaction History Screen (\texttt{/interactions}):} Unified chronological activity timeline documenting phone calls, meetings, emails, and client notes.
+    \item \textbf{User Profile and Settings Screen (\texttt{/settings}):} Personal staff details editor, password modification form, and system theme preferences.
+\end{enumerate}
